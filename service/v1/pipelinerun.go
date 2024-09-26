@@ -42,7 +42,7 @@ type ListPipelineRunResponse struct {
 
 // https://apiserver.cluster.local:6443/apis/tekton.dev/v1/namespaces/default/pipelineruns?labelSelector=app.kubernetes.io%2Fversion%3D0.3&limit=500
 func (t *PipelineRun) List(ctx context.Context, opts metav1.ListOptions) (resp []tektonv1.PipelineRun, err error) {
-	req := t.httpclient.Get(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/pipelineruns", t.namespace))
+	req := t.httpclient.Get(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/pipelineruns", t.namespace)).SetBearerAuthToken(t.token)
 	if opts.LabelSelector != "" {
 		req.SetQueryParam("labelSelector", opts.LabelSelector)
 	}
@@ -58,12 +58,14 @@ func (t *PipelineRun) List(ctx context.Context, opts metav1.ListOptions) (resp [
 	if err = req.SetSuccessResult(&res).Do(ctx).Err; err != nil {
 		return
 	}
-	return res.Items, nil
+	return t.processItems(res.Items), nil
 }
 
 // https://apiserver.cluster.local:6443/apis/tekton.dev/v1/namespaces/default/pipelineruns/:name
 func (t *PipelineRun) Get(ctx context.Context, name string) (resp tektonv1.PipelineRun, err error) {
-	if err = t.httpclient.Get(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/pipelineruns/%s", t.namespace, name)).SetSuccessResult(&resp).Do(ctx).Err; err != nil {
+	if err = t.httpclient.Get(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/pipelineruns/%s", t.namespace, name)).
+		SetBearerAuthToken(t.token).
+		SetSuccessResult(&resp).Do(ctx).Err; err != nil {
 		return
 	}
 	return
@@ -71,7 +73,9 @@ func (t *PipelineRun) Get(ctx context.Context, name string) (resp tektonv1.Pipel
 
 func (t *PipelineRun) GetYaml(ctx context.Context, name string) (string, error) {
 	var task types.TektonResource
-	if err := t.httpclient.Get(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/pipelineruns/%s", t.namespace, name)).SetSuccessResult(&task).Do(ctx).Err; err != nil {
+	if err := t.httpclient.Get(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/pipelineruns/%s", t.namespace, name)).
+		SetBearerAuthToken(t.token).
+		SetSuccessResult(&task).Do(ctx).Err; err != nil {
 		return "", err
 	}
 	delete(task.Metadata.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
@@ -81,9 +85,17 @@ func (t *PipelineRun) GetYaml(ctx context.Context, name string) (string, error) 
 }
 
 func (t *PipelineRun) Delete(ctx context.Context, name string) (err error) {
-	return t.httpclient.Delete(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/pipelineruns/%s", t.namespace, name)).Do(ctx).Err
+	return t.httpclient.Delete(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/pipelineruns/%s", t.namespace, name)).SetBearerAuthToken(t.token).Do(ctx).Err
 }
 
 func (t *PipelineRun) Create(ctx context.Context, yamlStr string) (err error) {
 	return t.svcCtx.ApplyYaml(ctx, t.namespace, yamlStr, "PipelineRun")
+}
+
+func (t *PipelineRun) processItems(items []tektonv1.PipelineRun) []tektonv1.PipelineRun {
+	for i := range items {
+		delete(items[i].ObjectMeta.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
+		items[i].ObjectMeta.ManagedFields = nil
+	}
+	return items
 }
