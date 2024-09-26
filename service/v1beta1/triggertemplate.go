@@ -58,7 +58,7 @@ func (t *TriggerTemplate) List(ctx context.Context, opts metav1.ListOptions) (re
 	if err = req.SetSuccessResult(&res).Do(ctx).Err; err != nil {
 		return
 	}
-	return res.Items, nil
+	return t.processItems(res.Items), nil
 }
 
 // https://apiserver.cluster.local:6443/apis/triggers.tekton.dev/v1beta1/namespaces/default/triggertemplates/:name
@@ -94,4 +94,12 @@ func (t *TriggerTemplate) Delete(ctx context.Context, name string) (err error) {
 
 func (t *TriggerTemplate) Create(ctx context.Context, yamlStr string) (err error) {
 	return t.svcCtx.ApplyYaml(ctx, t.namespace, yamlStr, "TriggerTemplate")
+}
+
+func (t *TriggerTemplate) processItems(items []tektonv1beta1.TriggerTemplate) []tektonv1beta1.TriggerTemplate {
+	for i := range items {
+		delete(items[i].ObjectMeta.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
+		items[i].ObjectMeta.ManagedFields = nil
+	}
+	return items
 }

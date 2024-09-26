@@ -58,7 +58,7 @@ func (t *Pipeline) List(ctx context.Context, opts metav1.ListOptions) (resp []te
 	if err = req.SetSuccessResult(&res).Do(ctx).Err; err != nil {
 		return
 	}
-	return res.Items, nil
+	return t.processItems(res.Items), nil
 }
 
 // https://apiserver.cluster.local:6443/apis/tekton.dev/v1/namespaces/default/pipelines/:name
@@ -90,4 +90,12 @@ func (t *Pipeline) Delete(ctx context.Context, name string) (err error) {
 
 func (t *Pipeline) Create(ctx context.Context, yamlStr string) (err error) {
 	return t.svcCtx.ApplyYaml(ctx, t.namespace, yamlStr, "Pipeline")
+}
+
+func (t *Pipeline) processItems(items []tektonv1.Pipeline) []tektonv1.Pipeline {
+	for i := range items {
+		delete(items[i].ObjectMeta.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
+		items[i].ObjectMeta.ManagedFields = nil
+	}
+	return items
 }

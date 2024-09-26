@@ -58,7 +58,7 @@ func (t *EventListener) List(ctx context.Context, opts metav1.ListOptions) (resp
 	if err = req.SetSuccessResult(&res).Do(ctx).Err; err != nil {
 		return
 	}
-	return res.Items, nil
+	return t.processItems(res.Items), nil
 }
 
 // https://apiserver.cluster.local:6443/apis/triggers.tekton.dev/v1beta1/namespaces/default/eventlisteners/:name
@@ -94,4 +94,12 @@ func (t *EventListener) Delete(ctx context.Context, name string) (err error) {
 
 func (t *EventListener) Create(ctx context.Context, yamlStr string) (err error) {
 	return t.svcCtx.ApplyYaml(ctx, t.namespace, yamlStr, "EventListener")
+}
+
+func (t *EventListener) processItems(items []tektonv1beta1.EventListener) []tektonv1beta1.EventListener {
+	for i := range items {
+		delete(items[i].ObjectMeta.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
+		items[i].ObjectMeta.ManagedFields = nil
+	}
+	return items
 }
