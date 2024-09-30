@@ -95,7 +95,7 @@ func (s *ServiceContext) ApplyYaml(ctx context.Context, namespace, yamlStr, kind
 			}
 		}
 	}
-	return
+	return nil
 }
 
 func (s *ServiceContext) getUnstructured(d *uyaml.YAMLOrJSONDecoder) (unstructureObj *unstructured.Unstructured, err error) {
