@@ -85,6 +85,18 @@ func (t *TaskRun) Get(ctx context.Context, name string) (resp tektonv1.TaskRun, 
 	return
 }
 
+func (t *TaskRun) GetStatus(ctx context.Context, name string) (string, error) {
+	var taskrun types.TektonResource
+	if err := t.httpclient.Get(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/taskruns/%s", t.namespace, name)).
+					SetBearerAuthToken(t.token).
+					SetSuccessResult(&taskrun).
+					Do(ctx).Err; err != nil {
+					return "", err
+	}
+	manifest, _ := yaml.Marshal(taskrun.Status)
+	return string(manifest), nil
+}
+
 func (t *TaskRun) processItems(items []tektonv1.TaskRun) []tektonv1.TaskRun {
 	for i := range items {
 		delete(items[i].ObjectMeta.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
