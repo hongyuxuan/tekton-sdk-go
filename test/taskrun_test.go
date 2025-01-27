@@ -44,7 +44,7 @@ func (s *SuiteTestTaskRun) Test2GetTaskRun() {
 }
 
 func (s *SuiteTestTaskRun) Test2GetTaskRunStatus() {
-	manifest, err := s.client.TaskRun(s.namespace).GetStatus(context.TODO(), s.name)
+	manifest, err := s.client.TaskRun(s.namespace).GetYaml(context.TODO(), s.name)
 	s.Nil(err)
 	fmt.Println(manifest)
 }

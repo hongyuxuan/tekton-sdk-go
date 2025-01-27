@@ -7,8 +7,10 @@ import (
 
 	"github.com/hongyuxuan/tekton-sdk-go/config"
 	"github.com/hongyuxuan/tekton-sdk-go/service"
+	"github.com/hongyuxuan/tekton-sdk-go/types"
 	"github.com/imroc/req/v3"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -85,15 +87,15 @@ func (t *TaskRun) Get(ctx context.Context, name string) (resp tektonv1.TaskRun, 
 	return
 }
 
-func (t *TaskRun) GetStatus(ctx context.Context, name string) (string, error) {
+func (t *TaskRun) GetYaml(ctx context.Context, name string) (string, error) {
 	var taskrun types.TektonResource
 	if err := t.httpclient.Get(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/taskruns/%s", t.namespace, name)).
-					SetBearerAuthToken(t.token).
-					SetSuccessResult(&taskrun).
-					Do(ctx).Err; err != nil {
-					return "", err
+		SetBearerAuthToken(t.token).
+		SetSuccessResult(&taskrun).
+		Do(ctx).Err; err != nil {
+		return "", err
 	}
-	manifest, _ := yaml.Marshal(taskrun.Status)
+	manifest, _ := yaml.Marshal(taskrun)
 	return string(manifest), nil
 }
 
