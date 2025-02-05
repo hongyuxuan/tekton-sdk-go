@@ -12,14 +12,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type SuiteTestTask struct {
+type SuiteTestClusterTask struct {
 	suite.Suite
 	client    *tekton.Client
 	name      string
 	namespace string
 }
 
-func (s *SuiteTestTask) SetupSuite() {
+func (s *SuiteTestClusterTask) SetupSuite() {
 	s.client = tekton.NewClient(
 		option.WithKubeconfig("./kubeconfig"),
 		option.WithSecretPrefix("default-token"),
@@ -29,12 +29,11 @@ func (s *SuiteTestTask) SetupSuite() {
 	s.namespace = "default"
 }
 
-func (s *SuiteTestTask) Test1CreateTask() {
-	yamlStr := `apiVersion: tekton.dev/v1
-kind: Task
+func (s *SuiteTestClusterTask) Test1CreateClusterTask() {
+	yamlStr := `apiVersion: tekton.dev/v1beta1
+kind: ClusterTask
 metadata:
   name: hello
-  namespace: default
   labels:
     app: hello
 spec:
@@ -45,12 +44,12 @@ spec:
       #!/bin/sh
       echo "Hello World"
 `
-	err := s.client.Task("default").Create(context.TODO(), yamlStr)
+	err := s.client.ClusterTask("default").Create(context.TODO(), yamlStr)
 	s.Nil(err)
 }
 
-func (s *SuiteTestTask) Test2ListTask() {
-	res, err := s.client.Task(s.namespace).List(context.TODO(), metav1.ListOptions{
+func (s *SuiteTestClusterTask) Test2ListClusterTask() {
+	res, err := s.client.ClusterTask(s.namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: "app=hello",
 		Limit:         3,
 	})
@@ -69,27 +68,27 @@ func (s *SuiteTestTask) Test2ListTask() {
 	}
 }
 
-func (s *SuiteTestTask) Test3GetTask() {
-	res, err := s.client.Task(s.namespace).Get(context.TODO(), s.name)
+func (s *SuiteTestClusterTask) Test3GetClusterTask() {
+	res, err := s.client.ClusterTask(s.namespace).Get(context.TODO(), s.name)
 	s.Nil(err)
 	if s.NotNil(res) {
 		fmt.Println(res)
 	}
 }
 
-func (s *SuiteTestTask) Test4GetYamlTask() {
-	res, err := s.client.Task(s.namespace).GetYaml(context.TODO(), s.name)
+func (s *SuiteTestClusterTask) Test4GetYamlClusterTask() {
+	res, err := s.client.ClusterTask(s.namespace).GetYaml(context.TODO(), s.name)
 	s.Nil(err)
 	if s.NotEmpty(res) {
 		fmt.Println(res)
 	}
 }
 
-func (s *SuiteTestTask) Test5DeleteTask() {
-	err := s.client.Task(s.namespace).Delete(context.TODO(), s.name)
+func (s *SuiteTestClusterTask) Test5DeleteClusterTask() {
+	err := s.client.ClusterTask(s.namespace).Delete(context.TODO(), s.name)
 	s.Nil(err)
 }
 
-func TestSuiteTestTask(t *testing.T) {
-	suite.Run(t, new(SuiteTestTask))
+func TestSuiteTestClusterTask(t *testing.T) {
+	suite.Run(t, new(SuiteTestClusterTask))
 }

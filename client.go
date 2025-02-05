@@ -102,6 +102,10 @@ func (c *Client) Task(namespace string) *v1.Task {
 	return v1.NewTask(c.Config, namespace, c.svcCtx)
 }
 
+func (c *Client) ClusterTask(namespace string) *v1beta1.ClusterTask {
+	return v1beta1.NewClusterTask(c.Config, namespace, c.svcCtx)
+}
+
 func (c *Client) Pipeline(namespace string) *v1.Pipeline {
 	return v1.NewPipeline(c.Config, namespace, c.svcCtx)
 }

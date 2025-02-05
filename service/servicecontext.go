@@ -41,15 +41,22 @@ func (s *ServiceContext) GetBearerToken(namespace string) (token string, err err
 		return s.BearerToken, nil
 	}
 	var res *corev1.SecretList
-	res, err = s.Clientset.CoreV1().Secrets(namespace).List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
+	var secret corev1.Secret
+	var ok bool
+	if res, err = s.Clientset.CoreV1().Secrets(namespace).List(context.TODO(), metav1.ListOptions{}); err != nil {
 		return
 	}
-	secret, ok := lo.Find(res.Items, func(item corev1.Secret) bool {
+	if secret, ok = lo.Find(res.Items, func(item corev1.Secret) bool {
 		return strings.HasPrefix(item.Name, s.SecretPrefix)
-	})
-	if !ok {
-		return "", errorx.NewDefaultError("cannot find secret with prefix=%s", s.SecretPrefix)
+	}); !ok {
+		if res, err = s.Clientset.CoreV1().Secrets("default").List(context.TODO(), metav1.ListOptions{}); err != nil {
+			return
+		}
+		if secret, ok = lo.Find(res.Items, func(item corev1.Secret) bool {
+			return strings.HasPrefix(item.Name, s.SecretPrefix)
+		}); !ok {
+			return "", errorx.NewDefaultError("cannot find secret with prefix=%s in namespace=%s|default", s.SecretPrefix, namespace)
+		}
 	}
 	token = string(secret.Data["token"])
 	return
@@ -69,7 +76,7 @@ func (s *ServiceContext) ApplyYaml(ctx context.Context, namespace, yamlStr, kind
 		if namespace != unstructureObj.GetNamespace() {
 			return errorx.NewDefaultError("Namespace %s mismatch %s", unstructureObj.GetNamespace(), namespace)
 		}
-		if unstructureObj.GetKind() != kind {
+		if kind != unstructureObj.GetKind() {
 			return errorx.NewDefaultError("Kind %s mismatch with %s", unstructureObj.GetKind(), kind)
 		}
 		var gvr schema.GroupVersionResource
@@ -79,13 +86,25 @@ func (s *ServiceContext) ApplyYaml(ctx context.Context, namespace, yamlStr, kind
 		}
 		foundObj, getErr := s.Dynamicclient.Resource(gvr).Namespace(namespace).Get(ctx, unstructureObj.GetName(), metav1.GetOptions{})
 		if getErr != nil { // not found, create resource
-			if _, err = s.Dynamicclient.Resource(gvr).Namespace(namespace).Create(ctx, unstructureObj, metav1.CreateOptions{}); err != nil {
-				return
+			if namespace == "" {
+				if _, err = s.Dynamicclient.Resource(gvr).Create(ctx, unstructureObj, metav1.CreateOptions{}); err != nil {
+					return
+				}
+			} else {
+				if _, err = s.Dynamicclient.Resource(gvr).Namespace(namespace).Create(ctx, unstructureObj, metav1.CreateOptions{}); err != nil {
+					return
+				}
 			}
 		} else { // found & update resource
 			unstructureObj.SetResourceVersion(foundObj.GetResourceVersion())
-			if _, err = s.Dynamicclient.Resource(gvr).Namespace(namespace).Update(ctx, unstructureObj, metav1.UpdateOptions{}); err != nil {
-				return errorx.NewDefaultError("unable to apply yaml of resource[%s]: %v", unstructureObj.GetName(), err)
+			if namespace == "" {
+				if _, err = s.Dynamicclient.Resource(gvr).Update(ctx, unstructureObj, metav1.UpdateOptions{}); err != nil {
+					return errorx.NewDefaultError("unable to apply yaml of resource[%s]: %v", unstructureObj.GetName(), err)
+				}
+			} else {
+				if _, err = s.Dynamicclient.Resource(gvr).Namespace(namespace).Update(ctx, unstructureObj, metav1.UpdateOptions{}); err != nil {
+					return errorx.NewDefaultError("unable to apply yaml of resource[%s]: %v", unstructureObj.GetName(), err)
+				}
 			}
 		}
 	}
