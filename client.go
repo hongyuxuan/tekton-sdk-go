@@ -8,6 +8,7 @@ import (
 	"github.com/hongyuxuan/tekton-sdk-go/core/errorx"
 	"github.com/hongyuxuan/tekton-sdk-go/core/option"
 	"github.com/hongyuxuan/tekton-sdk-go/service"
+	automatikov1beta1 "github.com/hongyuxuan/tekton-sdk-go/service/automatiko/v1beta1"
 	v1 "github.com/hongyuxuan/tekton-sdk-go/service/v1"
 	v1beta1 "github.com/hongyuxuan/tekton-sdk-go/service/v1beta1"
 	"github.com/imroc/req/v3"
@@ -102,12 +103,20 @@ func (c *Client) Task(namespace string) *v1.Task {
 	return v1.NewTask(c.Config, namespace, c.svcCtx)
 }
 
+func (c *Client) ClusterTask(namespace string) *v1beta1.ClusterTask {
+	return v1beta1.NewClusterTask(c.Config, namespace, c.svcCtx)
+}
+
 func (c *Client) Pipeline(namespace string) *v1.Pipeline {
 	return v1.NewPipeline(c.Config, namespace, c.svcCtx)
 }
 
 func (c *Client) PipelineRun(namespace string) *v1.PipelineRun {
 	return v1.NewPipelineRun(c.Config, namespace, c.svcCtx)
+}
+
+func (c *Client) TaskRun(namespace string) *v1.TaskRun {
+	return v1.NewTaskRun(c.Config, namespace, c.svcCtx)
 }
 
 func (c *Client) TriggerBinding(namespace string) *v1beta1.TriggerBinding {
@@ -120,4 +129,8 @@ func (c *Client) TriggerTemplate(namespace string) *v1beta1.TriggerTemplate {
 
 func (c *Client) EventListener(namespace string) *v1beta1.EventListener {
 	return v1beta1.NewEventListener(c.Config, namespace, c.svcCtx)
+}
+
+func (c *Client) ApprovalTask(namespace string) *automatikov1beta1.ApprovalTask {
+	return automatikov1beta1.NewApprovalTask(c.Config, namespace, c.svcCtx)
 }

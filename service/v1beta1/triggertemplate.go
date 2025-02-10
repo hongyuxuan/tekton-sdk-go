@@ -73,16 +73,16 @@ func (t *TriggerTemplate) Get(ctx context.Context, name string) (resp tektonv1be
 }
 
 func (t *TriggerTemplate) GetYaml(ctx context.Context, name string) (string, error) {
-	var task types.TektonResource
+	var triggertemplate types.TektonResource
 	if err := t.httpclient.Get(fmt.Sprintf("/apis/triggers.tekton.dev/v1beta1/namespaces/%s/triggertemplates/%s", t.namespace, name)).
 		SetBearerAuthToken(t.token).
-		SetSuccessResult(&task).
+		SetSuccessResult(&triggertemplate).
 		Do(ctx).Err; err != nil {
 		return "", err
 	}
-	delete(task.Metadata.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
-	task.Status = nil
-	manifest, _ := yaml.Marshal(task)
+	delete(triggertemplate.Metadata.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
+	triggertemplate.Status = nil
+	manifest, _ := yaml.Marshal(triggertemplate)
 	return string(manifest), nil
 }
 

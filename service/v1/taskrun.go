@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/hongyuxuan/tekton-sdk-go/config"
@@ -13,7 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type Task struct {
+type TaskRun struct {
 	svcCtx     *service.ServiceContext
 	httpclient *req.Client
 	config     *config.Config
@@ -21,12 +22,12 @@ type Task struct {
 	token      string
 }
 
-func NewTask(c *config.Config, namespace string, svcCtx *service.ServiceContext) *Task {
+func NewTaskRun(c *config.Config, namespace string, svcCtx *service.ServiceContext) *TaskRun {
 	token, err := svcCtx.GetBearerToken(namespace)
 	if err != nil {
 		panic(err)
 	}
-	return &Task{
+	return &TaskRun{
 		svcCtx:     svcCtx,
 		httpclient: c.Httpclient,
 		config:     c,
@@ -35,14 +36,26 @@ func NewTask(c *config.Config, namespace string, svcCtx *service.ServiceContext)
 	}
 }
 
-type ListTaskResponse struct {
-	ApiVersion string          `json:"apiVersion"`
-	Items      []tektonv1.Task `json:"items"`
+type ListTaskRunResponse struct {
+	ApiVersion string             `json:"apiVersion"`
+	Items      []tektonv1.TaskRun `json:"items"`
+}
+
+type TaskRunList []tektonv1.TaskRun
+
+func (r *TaskRunList) ToJsonString() string {
+	b, _ := json.Marshal(r)
+	return string(b)
+}
+
+func (r *TaskRunList) ToJsonStringPretty() string {
+	b, _ := json.MarshalIndent(r, "", "  ")
+	return string(b)
 }
 
 // https://apiserver.cluster.local:6443/apis/tekton.dev/v1/namespaces/default/tasks?labelSelector=app.kubernetes.io%2Fversion%3D0.3&limit=500
-func (t *Task) List(ctx context.Context, opts metav1.ListOptions) (resp []tektonv1.Task, err error) {
-	req := t.httpclient.Get(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/tasks", t.namespace)).SetBearerAuthToken(t.token)
+func (t *TaskRun) List(ctx context.Context, opts metav1.ListOptions) (resp TaskRunList, err error) {
+	req := t.httpclient.Get(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/taskruns", t.namespace)).SetBearerAuthToken(t.token)
 	if opts.LabelSelector != "" {
 		req.SetQueryParam("labelSelector", opts.LabelSelector)
 	}
@@ -54,7 +67,7 @@ func (t *Task) List(ctx context.Context, opts metav1.ListOptions) (resp []tekton
 	} else {
 		req.SetQueryParam("limit", "500") // default 500
 	}
-	var res ListTaskResponse
+	var res ListTaskRunResponse
 	if err = req.SetSuccessResult(&res).Do(ctx).Err; err != nil {
 		return
 	}
@@ -63,39 +76,30 @@ func (t *Task) List(ctx context.Context, opts metav1.ListOptions) (resp []tekton
 }
 
 // https://apiserver.cluster.local:6443/apis/tekton.dev/v1/namespaces/default/tasks/:name
-func (t *Task) Get(ctx context.Context, name string) (resp tektonv1.Task, err error) {
-	if err = t.httpclient.Get(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/tasks/%s", t.namespace, name)).
+func (t *TaskRun) Get(ctx context.Context, name string) (resp tektonv1.TaskRun, err error) {
+	if err = t.httpclient.Get(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/taskruns/%s", t.namespace, name)).
 		SetBearerAuthToken(t.token).
 		SetSuccessResult(&resp).
 		Do(ctx).Err; err != nil {
 		return
 	}
+	resp.ObjectMeta.ManagedFields = nil
 	return
 }
 
-func (t *Task) GetYaml(ctx context.Context, name string) (string, error) {
-	var task types.TektonResource
-	if err := t.httpclient.Get(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/tasks/%s", t.namespace, name)).
+func (t *TaskRun) GetYaml(ctx context.Context, name string) (string, error) {
+	var taskrun types.TektonResource
+	if err := t.httpclient.Get(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/taskruns/%s", t.namespace, name)).
 		SetBearerAuthToken(t.token).
-		SetSuccessResult(&task).
+		SetSuccessResult(&taskrun).
 		Do(ctx).Err; err != nil {
 		return "", err
 	}
-	delete(task.Metadata.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
-	task.Status = nil
-	manifest, _ := yaml.Marshal(task)
+	manifest, _ := yaml.Marshal(taskrun)
 	return string(manifest), nil
 }
 
-func (t *Task) Delete(ctx context.Context, name string) (err error) {
-	return t.httpclient.Delete(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/tasks/%s", t.namespace, name)).SetBearerAuthToken(t.token).Do(ctx).Err
-}
-
-func (t *Task) Create(ctx context.Context, yamlStr string) (err error) {
-	return t.svcCtx.ApplyYaml(ctx, t.namespace, yamlStr, "Task")
-}
-
-func (t *Task) processItems(items []tektonv1.Task) []tektonv1.Task {
+func (t *TaskRun) processItems(items []tektonv1.TaskRun) []tektonv1.TaskRun {
 	for i := range items {
 		delete(items[i].ObjectMeta.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
 		items[i].ObjectMeta.ManagedFields = nil

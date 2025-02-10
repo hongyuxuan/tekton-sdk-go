@@ -72,15 +72,15 @@ func (t *PipelineRun) Get(ctx context.Context, name string) (resp tektonv1.Pipel
 }
 
 func (t *PipelineRun) GetYaml(ctx context.Context, name string) (string, error) {
-	var task types.TektonResource
+	var pipelinerun types.TektonResource
 	if err := t.httpclient.Get(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/pipelineruns/%s", t.namespace, name)).
 		SetBearerAuthToken(t.token).
-		SetSuccessResult(&task).Do(ctx).Err; err != nil {
+		SetSuccessResult(&pipelinerun).Do(ctx).Err; err != nil {
 		return "", err
 	}
-	delete(task.Metadata.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
-	task.Status = nil
-	manifest, _ := yaml.Marshal(task)
+	delete(pipelinerun.Metadata.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
+	pipelinerun.Status = nil
+	manifest, _ := yaml.Marshal(pipelinerun)
 	return string(manifest), nil
 }
 

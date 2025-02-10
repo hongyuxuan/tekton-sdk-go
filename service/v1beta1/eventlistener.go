@@ -73,16 +73,16 @@ func (t *EventListener) Get(ctx context.Context, name string) (resp tektonv1beta
 }
 
 func (t *EventListener) GetYaml(ctx context.Context, name string) (string, error) {
-	var task types.TektonResource
+	var eventlistener types.TektonResource
 	if err := t.httpclient.Get(fmt.Sprintf("/apis/triggers.tekton.dev/v1beta1/namespaces/%s/eventlisteners/%s", t.namespace, name)).
 		SetBearerAuthToken(t.token).
-		SetSuccessResult(&task).
+		SetSuccessResult(&eventlistener).
 		Do(ctx).Err; err != nil {
 		return "", err
 	}
-	delete(task.Metadata.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
-	task.Status = nil
-	manifest, _ := yaml.Marshal(task)
+	delete(eventlistener.Metadata.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
+	eventlistener.Status = nil
+	manifest, _ := yaml.Marshal(eventlistener)
 	return string(manifest), nil
 }
 

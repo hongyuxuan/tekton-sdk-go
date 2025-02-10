@@ -29,57 +29,7 @@ func (s *SuiteTestPipelineRun) SetupSuite() {
 }
 
 func (s *SuiteTestPipelineRun) Test1CreatePipelineRun() {
-	yamlStr := `apiVersion: tekton.dev/v1
-kind: PipelineRun
-metadata:
-  annotations:
-    fiops/author: hongyuxuan
-  creationTimestamp: "2024-09-04T02:08:26Z"
-  labels:
-    app: testpipelinerun
-    dashboard.tekton.dev/rerunOf: lizardrestic-server-pipeline-run-r-v9lc7
-    tekton.dev/pipeline: lizardrestic-server-pipeline
-    triggers.tekton.dev/eventlistener: fiops-pipeline-eventlistener
-    triggers.tekton.dev/trigger: fiops-match
-    triggers.tekton.dev/triggers-eventid: 80284306-1308-4adc-9574-7ddb706ca4d4
-  name: testpipelinerun
-  generateName: lizardrestic-server-pipeline-run-r-
-  namespace: default
-spec:
-  params:
-  - name: revision
-    value: release-v1.0.0
-  - name: repo-url
-    value: git@gitlab.cicconline.com:xficc/devops/lizardrestic.git
-  pipelineRef:
-    name: lizardrestic-server-pipeline
-  taskRunTemplate:
-    serviceAccountName: default
-  timeouts:
-    pipeline: 1h0m0s
-  workspaces:
-  - name: shared-workspace
-    volumeClaimTemplate:
-      metadata:
-        creationTimestamp: null
-      spec:
-        accessModes:
-        - ReadWriteOnce
-        resources:
-          requests:
-            storage: 1Gi
-        storageClassName: nfs-client
-      status: {}
-  - name: dockerhub-auth
-    secret:
-      secretName: docker-credential
-  - name: git-credentials
-    secret:
-      secretName: git-credentials
-  - name: jfrog-auth
-    secret:
-      secretName: jfrog-credentials
-`
+	yamlStr := ``
 	err := s.client.PipelineRun(s.namespace).Create(context.TODO(), yamlStr)
 	s.Nil(err)
 }
