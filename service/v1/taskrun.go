@@ -99,6 +99,14 @@ func (t *TaskRun) GetYaml(ctx context.Context, name string) (string, error) {
 	return string(manifest), nil
 }
 
+func (t *TaskRun) Delete(ctx context.Context, name string) (err error) {
+	return t.httpclient.Delete(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/taskruns/%s", t.namespace, name)).SetBearerAuthToken(t.token).Do(ctx).Err
+}
+
+func (t *TaskRun) Create(ctx context.Context, yamlStr string) (err error) {
+	return t.svcCtx.ApplyYaml(ctx, t.namespace, yamlStr, "TaskRun")
+}
+
 func (t *TaskRun) processItems(items []tektonv1.TaskRun) []tektonv1.TaskRun {
 	for i := range items {
 		delete(items[i].ObjectMeta.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
