@@ -82,7 +82,6 @@ func (t *Task) GetYaml(ctx context.Context, name string) (string, error) {
 		return "", err
 	}
 	delete(task.Metadata.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
-	task.Status = nil
 	manifest, _ := yaml.Marshal(task)
 	return string(manifest), nil
 }

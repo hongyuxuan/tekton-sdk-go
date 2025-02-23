@@ -79,7 +79,6 @@ func (t *PipelineRun) GetYaml(ctx context.Context, name string) (string, error) 
 		return "", err
 	}
 	delete(pipelinerun.Metadata.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
-	pipelinerun.Status = nil
 	manifest, _ := yaml.Marshal(pipelinerun)
 	return string(manifest), nil
 }

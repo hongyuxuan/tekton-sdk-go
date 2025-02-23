@@ -81,7 +81,6 @@ func (t *TriggerBinding) GetYaml(ctx context.Context, name string) (string, erro
 		return "", err
 	}
 	delete(triggerbinding.Metadata.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
-	triggerbinding.Status = nil
 	manifest, _ := yaml.Marshal(triggerbinding)
 	return string(manifest), nil
 }

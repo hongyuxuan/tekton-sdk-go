@@ -81,7 +81,6 @@ func (t *TriggerTemplate) GetYaml(ctx context.Context, name string) (string, err
 		return "", err
 	}
 	delete(triggertemplate.Metadata.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
-	triggertemplate.Status = nil
 	manifest, _ := yaml.Marshal(triggertemplate)
 	return string(manifest), nil
 }

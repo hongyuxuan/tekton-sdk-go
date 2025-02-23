@@ -81,7 +81,6 @@ func (t *ApprovalTask) GetYaml(ctx context.Context, name string) (string, error)
 		return "", err
 	}
 	delete(approvaltask.Metadata.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
-	approvaltask.Status = nil
 	manifest, _ := yaml.Marshal(approvaltask)
 	return string(manifest), nil
 }

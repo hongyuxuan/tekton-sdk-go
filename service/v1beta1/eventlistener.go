@@ -81,7 +81,6 @@ func (t *EventListener) GetYaml(ctx context.Context, name string) (string, error
 		return "", err
 	}
 	delete(eventlistener.Metadata.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
-	eventlistener.Status = nil
 	manifest, _ := yaml.Marshal(eventlistener)
 	return string(manifest), nil
 }
