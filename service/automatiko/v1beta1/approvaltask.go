@@ -42,7 +42,11 @@ type ListApprovalTaskResponse struct {
 
 // https://apiserver.cluster.local:6443/apis/tekton.automatiko.io/v1beta1/namespaces/default/approvaltasks?labelSelector=app.kubernetes.io%2Fversion%3D0.3&limit=500
 func (t *ApprovalTask) List(ctx context.Context, opts metav1.ListOptions) (resp []automatikotypes.ApprovalTask, err error) {
-	req := t.httpclient.Get(fmt.Sprintf("/apis/tekton.automatiko.io/v1beta1/namespaces/%s/approvaltasks", t.namespace)).SetBearerAuthToken(t.token)
+	url := fmt.Sprintf("/apis/tekton.automatiko.io/v1beta1/namespaces/%s/approvaltasks", t.namespace)
+	if t.namespace == "" {
+		url = "/apis/tekton.automatiko.io/v1beta1/approvaltasks"
+	}
+	req := t.httpclient.Get(url).SetBearerAuthToken(t.token)
 	if opts.LabelSelector != "" {
 		req.SetQueryParam("labelSelector", opts.LabelSelector)
 	}

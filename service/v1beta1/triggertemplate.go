@@ -42,7 +42,11 @@ type ListTriggerTemplateResponse struct {
 
 // https://apiserver.cluster.local:6443/apis/triggers.tekton.dev/v1beta1/namespaces/default/triggertemplates?labelSelector=app.kubernetes.io%2Fversion%3D0.3&limit=500
 func (t *TriggerTemplate) List(ctx context.Context, opts metav1.ListOptions) (resp []tektonv1beta1.TriggerTemplate, err error) {
-	req := t.httpclient.Get(fmt.Sprintf("/apis/triggers.tekton.dev/v1beta1/namespaces/%s/triggertemplates", t.namespace)).SetBearerAuthToken(t.token)
+	url := fmt.Sprintf("/apis/triggers.tekton.dev/v1beta1/namespaces/%s/triggertemplates", t.namespace)
+	if t.namespace == "" {
+		url = "/apis/triggers.tekton.dev/v1beta1/triggertemplates"
+	}
+	req := t.httpclient.Get(url).SetBearerAuthToken(t.token)
 	if opts.LabelSelector != "" {
 		req.SetQueryParam("labelSelector", opts.LabelSelector)
 	}

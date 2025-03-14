@@ -42,7 +42,11 @@ type ListTaskResponse struct {
 
 // https://apiserver.cluster.local:6443/apis/tekton.dev/v1/namespaces/default/tasks?labelSelector=app.kubernetes.io%2Fversion%3D0.3&limit=500
 func (t *Task) List(ctx context.Context, opts metav1.ListOptions) (resp []tektonv1.Task, err error) {
-	req := t.httpclient.Get(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/tasks", t.namespace)).SetBearerAuthToken(t.token)
+	url := fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/tasks", t.namespace)
+	if t.namespace == "" {
+		url = "/apis/tekton.dev/v1/tasks"
+	}
+	req := t.httpclient.Get(url).SetBearerAuthToken(t.token)
 	if opts.LabelSelector != "" {
 		req.SetQueryParam("labelSelector", opts.LabelSelector)
 	}

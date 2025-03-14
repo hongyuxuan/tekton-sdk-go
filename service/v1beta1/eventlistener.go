@@ -42,7 +42,11 @@ type ListEventListenerResponse struct {
 
 // https://apiserver.cluster.local:6443/apis/triggers.tekton.dev/v1beta1/namespaces/default/eventlisteners?labelSelector=app.kubernetes.io%2Fversion%3D0.3&limit=500
 func (t *EventListener) List(ctx context.Context, opts metav1.ListOptions) (resp []tektonv1beta1.EventListener, err error) {
-	req := t.httpclient.Get(fmt.Sprintf("/apis/triggers.tekton.dev/v1beta1/namespaces/%s/eventlisteners", t.namespace)).SetBearerAuthToken(t.token)
+	url := fmt.Sprintf("/apis/triggers.tekton.dev/v1beta1/namespaces/%s/eventlisteners", t.namespace)
+	if t.namespace == "" {
+		url = "/apis/triggers.tekton.dev/v1beta1/eventlisteners"
+	}
+	req := t.httpclient.Get(url).SetBearerAuthToken(t.token)
 	if opts.LabelSelector != "" {
 		req.SetQueryParam("labelSelector", opts.LabelSelector)
 	}

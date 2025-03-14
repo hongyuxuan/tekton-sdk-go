@@ -42,7 +42,11 @@ type ListTriggerBindingResponse struct {
 
 // https://apiserver.cluster.local:6443/apis/triggers.tekton.dev/v1beta1/namespaces/default/triggerbindings?labelSelector=app.kubernetes.io%2Fversion%3D0.3&limit=500
 func (t *TriggerBinding) List(ctx context.Context, opts metav1.ListOptions) (resp []tektonv1beta1.TriggerBinding, err error) {
-	req := t.httpclient.Get(fmt.Sprintf("/apis/triggers.tekton.dev/v1beta1/namespaces/%s/triggerbindings", t.namespace)).SetBearerAuthToken(t.token)
+	url := fmt.Sprintf("/apis/triggers.tekton.dev/v1beta1/namespaces/%s/triggerbindings", t.namespace)
+	if t.namespace == "" {
+		url = "/apis/triggers.tekton.dev/v1beta1/triggerbindings"
+	}
+	req := t.httpclient.Get(url).SetBearerAuthToken(t.token)
 	if opts.LabelSelector != "" {
 		req.SetQueryParam("labelSelector", opts.LabelSelector)
 	}

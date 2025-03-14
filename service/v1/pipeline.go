@@ -42,7 +42,11 @@ type ListPipelineResponse struct {
 
 // https://apiserver.cluster.local:6443/apis/tekton.dev/v1/namespaces/default/pipelines?labelSelector=app.kubernetes.io%2Fversion%3D0.3&limit=500
 func (t *Pipeline) List(ctx context.Context, opts metav1.ListOptions) (resp []tektonv1.Pipeline, err error) {
-	req := t.httpclient.Get(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/pipelines", t.namespace)).SetBearerAuthToken(t.token)
+	url := fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/pipelines", t.namespace)
+	if t.namespace == "" {
+		url = "/apis/tekton.dev/v1/pipelines"
+	}
+	req := t.httpclient.Get(url).SetBearerAuthToken(t.token)
 	if opts.LabelSelector != "" {
 		req.SetQueryParam("labelSelector", opts.LabelSelector)
 	}
