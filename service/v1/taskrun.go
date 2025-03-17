@@ -39,6 +39,9 @@ func NewTaskRun(c *config.Config, namespace string, svcCtx *service.ServiceConte
 type ListTaskRunResponse struct {
 	ApiVersion string             `json:"apiVersion"`
 	Items      []tektonv1.TaskRun `json:"items"`
+	Metadata   struct {
+		Continue string `json:"continue"`
+	}
 }
 
 type TaskRunList []tektonv1.TaskRun
@@ -54,7 +57,7 @@ func (r *TaskRunList) ToJsonStringPretty() string {
 }
 
 // https://apiserver.cluster.local:6443/apis/tekton.dev/v1/namespaces/default/tasks?labelSelector=app.kubernetes.io%2Fversion%3D0.3&limit=500
-func (t *TaskRun) List(ctx context.Context, opts metav1.ListOptions) (resp TaskRunList, err error) {
+func (t *TaskRun) List(ctx context.Context, opts metav1.ListOptions) (resp TaskRunList, conti string, err error) {
 	url := fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/taskruns", t.namespace)
 	if t.namespace == "" {
 		url = "/apis/tekton.dev/v1/taskruns"
@@ -71,12 +74,15 @@ func (t *TaskRun) List(ctx context.Context, opts metav1.ListOptions) (resp TaskR
 	} else {
 		req.SetQueryParam("limit", "500") // default 500
 	}
+	if opts.Continue != "" {
+		req.SetQueryParam("continue", opts.Continue)
+	}
 	var res ListTaskRunResponse
 	if err = req.SetSuccessResult(&res).Do(ctx).Err; err != nil {
 		return
 	}
 
-	return t.processItems(res.Items), nil
+	return t.processItems(res.Items), res.Metadata.Continue, nil
 }
 
 // https://apiserver.cluster.local:6443/apis/tekton.dev/v1/namespaces/default/tasks/:name

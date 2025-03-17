@@ -49,7 +49,7 @@ spec:
 }
 
 func (s *SuiteTestClusterTask) Test2ListClusterTask() {
-	res, err := s.client.ClusterTask(s.namespace).List(context.TODO(), metav1.ListOptions{
+	res, _, err := s.client.ClusterTask(s.namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: "app=hello",
 		Limit:         3,
 	})

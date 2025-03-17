@@ -38,10 +38,13 @@ func NewPipelineRun(c *config.Config, namespace string, svcCtx *service.ServiceC
 type ListPipelineRunResponse struct {
 	ApiVersion string                 `json:"apiVersion"`
 	Items      []tektonv1.PipelineRun `json:"items"`
+	Metadata   struct {
+		Continue string `json:"continue"`
+	}
 }
 
 // https://apiserver.cluster.local:6443/apis/tekton.dev/v1/namespaces/default/pipelineruns?labelSelector=app.kubernetes.io%2Fversion%3D0.3&limit=500
-func (t *PipelineRun) List(ctx context.Context, opts metav1.ListOptions) (resp []tektonv1.PipelineRun, err error) {
+func (t *PipelineRun) List(ctx context.Context, opts metav1.ListOptions) (resp []tektonv1.PipelineRun, conti string, err error) {
 	url := fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/pipelineruns", t.namespace)
 	if t.namespace == "" {
 		url = "/apis/tekton.dev/v1/pipelineruns"
@@ -58,11 +61,14 @@ func (t *PipelineRun) List(ctx context.Context, opts metav1.ListOptions) (resp [
 	} else {
 		req.SetQueryParam("limit", "500") // default 500
 	}
+	if opts.Continue != "" {
+		req.SetQueryParam("continue", opts.Continue)
+	}
 	var res ListPipelineRunResponse
 	if err = req.SetSuccessResult(&res).Do(ctx).Err; err != nil {
 		return
 	}
-	return t.processItems(res.Items), nil
+	return t.processItems(res.Items), res.Metadata.Continue, nil
 }
 
 // https://apiserver.cluster.local:6443/apis/tekton.dev/v1/namespaces/default/pipelineruns/:name

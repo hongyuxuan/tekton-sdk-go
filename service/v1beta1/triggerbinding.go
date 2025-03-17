@@ -38,10 +38,13 @@ func NewTriggerBinding(c *config.Config, namespace string, svcCtx *service.Servi
 type ListTriggerBindingResponse struct {
 	ApiVersion string                         `json:"apiVersion"`
 	Items      []tektonv1beta1.TriggerBinding `json:"items"`
+	Metadata   struct {
+		Continue string `json:"continue"`
+	}
 }
 
 // https://apiserver.cluster.local:6443/apis/triggers.tekton.dev/v1beta1/namespaces/default/triggerbindings?labelSelector=app.kubernetes.io%2Fversion%3D0.3&limit=500
-func (t *TriggerBinding) List(ctx context.Context, opts metav1.ListOptions) (resp []tektonv1beta1.TriggerBinding, err error) {
+func (t *TriggerBinding) List(ctx context.Context, opts metav1.ListOptions) (resp []tektonv1beta1.TriggerBinding, conti string, err error) {
 	url := fmt.Sprintf("/apis/triggers.tekton.dev/v1beta1/namespaces/%s/triggerbindings", t.namespace)
 	if t.namespace == "" {
 		url = "/apis/triggers.tekton.dev/v1beta1/triggerbindings"
@@ -58,11 +61,14 @@ func (t *TriggerBinding) List(ctx context.Context, opts metav1.ListOptions) (res
 	} else {
 		req.SetQueryParam("limit", "500") // default 500
 	}
+	if opts.Continue != "" {
+		req.SetQueryParam("continue", opts.Continue)
+	}
 	var res ListTriggerBindingResponse
 	if err = req.SetSuccessResult(&res).Do(ctx).Err; err != nil {
 		return
 	}
-	return t.processItems(res.Items), nil
+	return t.processItems(res.Items), res.Metadata.Continue, nil
 }
 
 // https://apiserver.cluster.local:6443/apis/triggers.tekton.dev/v1beta1/namespaces/default/triggerbindings/:name

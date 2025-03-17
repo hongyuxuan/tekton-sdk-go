@@ -9,6 +9,7 @@ import (
 	tekton "github.com/hongyuxuan/tekton-sdk-go"
 	"github.com/hongyuxuan/tekton-sdk-go/core/option"
 	"github.com/stretchr/testify/suite"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -26,17 +27,17 @@ func (s *SuiteTestTask) SetupSuite() {
 		// option.WithDebug(true),
 	)
 	s.name = "hello"
-	s.namespace = "default"
+	s.namespace = "tektoncd-default"
 }
 
 func (s *SuiteTestTask) Test1CreateTask() {
-	yamlStr := `apiVersion: tekton.dev/v1
+	yamlStr := fmt.Sprintf(`apiVersion: tekton.dev/v1
 kind: Task
 metadata:
-  name: hello
-  namespace: default
+  name: %s
+  namespace: %s
   labels:
-    app: hello
+    app: %s
 spec:
   steps:
   - image: alpine:edge
@@ -44,13 +45,13 @@ spec:
     script: |
       #!/bin/sh
       echo "Hello World"
-`
-	err := s.client.Task("default").Create(context.TODO(), yamlStr)
+`, s.name, s.namespace, s.name)
+	err := s.client.Task(s.namespace).Create(context.TODO(), yamlStr)
 	s.Nil(err)
 }
 
 func (s *SuiteTestTask) Test2ListTask() {
-	res, err := s.client.Task(s.namespace).List(context.TODO(), metav1.ListOptions{
+	res, _, err := s.client.Task(s.namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: "app=hello",
 		Limit:         3,
 	})
@@ -85,7 +86,28 @@ func (s *SuiteTestTask) Test4GetYamlTask() {
 	}
 }
 
-func (s *SuiteTestTask) Test5DeleteTask() {
+func (s *SuiteTestTask) Test5ListAllPipeline() {
+	var res []tektonv1.Task
+	conti := ""
+	var err error
+	for {
+		res, conti, err = s.client.Task(s.namespace).List(context.TODO(), metav1.ListOptions{
+			Limit:    1,
+			Continue: conti,
+		})
+		s.Nil(err)
+		if s.NotNil(res) {
+			for _, item := range res {
+				fmt.Println(item.GetName())
+			}
+		}
+		if conti == "" {
+			break
+		}
+	}
+}
+
+func (s *SuiteTestTask) Test6DeleteTask() {
 	err := s.client.Task(s.namespace).Delete(context.TODO(), s.name)
 	s.Nil(err)
 }

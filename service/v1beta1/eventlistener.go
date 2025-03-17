@@ -38,10 +38,13 @@ func NewEventListener(c *config.Config, namespace string, svcCtx *service.Servic
 type ListEventListenerResponse struct {
 	ApiVersion string                        `json:"apiVersion"`
 	Items      []tektonv1beta1.EventListener `json:"items"`
+	Metadata   struct {
+		Continue string `json:"continue"`
+	}
 }
 
 // https://apiserver.cluster.local:6443/apis/triggers.tekton.dev/v1beta1/namespaces/default/eventlisteners?labelSelector=app.kubernetes.io%2Fversion%3D0.3&limit=500
-func (t *EventListener) List(ctx context.Context, opts metav1.ListOptions) (resp []tektonv1beta1.EventListener, err error) {
+func (t *EventListener) List(ctx context.Context, opts metav1.ListOptions) (resp []tektonv1beta1.EventListener, conti string, err error) {
 	url := fmt.Sprintf("/apis/triggers.tekton.dev/v1beta1/namespaces/%s/eventlisteners", t.namespace)
 	if t.namespace == "" {
 		url = "/apis/triggers.tekton.dev/v1beta1/eventlisteners"
@@ -58,11 +61,14 @@ func (t *EventListener) List(ctx context.Context, opts metav1.ListOptions) (resp
 	} else {
 		req.SetQueryParam("limit", "500") // default 500
 	}
+	if opts.Continue != "" {
+		req.SetQueryParam("continue", opts.Continue)
+	}
 	var res ListEventListenerResponse
 	if err = req.SetSuccessResult(&res).Do(ctx).Err; err != nil {
 		return
 	}
-	return t.processItems(res.Items), nil
+	return t.processItems(res.Items), res.Metadata.Continue, nil
 }
 
 // https://apiserver.cluster.local:6443/apis/triggers.tekton.dev/v1beta1/namespaces/default/eventlisteners/:name

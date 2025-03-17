@@ -33,7 +33,7 @@ func (s *SuiteTestEventListener) Test1CreateEventListener() {
 kind: EventListener
 metadata:
   annotations:
-    fiops/author: hongyuxuan
+    tekton/author: hongyuxuan
   labels:
     app: testeventlistener
   creationTimestamp: "2024-03-07T01:43:33Z"
@@ -56,7 +56,7 @@ spec:
 }
 
 func (s *SuiteTestEventListener) Test2ListEventListener() {
-	res, err := s.client.EventListener(s.namespace).List(context.TODO(), metav1.ListOptions{
+	res, _, err := s.client.EventListener(s.namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: "app=testeventlistener",
 		Limit:         3,
 	})

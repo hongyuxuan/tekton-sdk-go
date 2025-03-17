@@ -8,6 +8,7 @@ import (
 	tekton "github.com/hongyuxuan/tekton-sdk-go"
 	"github.com/hongyuxuan/tekton-sdk-go/core/option"
 	"github.com/stretchr/testify/suite"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -29,13 +30,13 @@ func (s *SuiteTestPipeline) SetupSuite() {
 }
 
 func (s *SuiteTestPipeline) Test1CreatePipeline() {
-	yamlStr := `apiVersion: tekton.dev/v1
+	yamlStr := fmt.Sprintf(`apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
-  name: testpipeline
-  namespace: default
+  name: %s
+  namespace: %s
   labels:
-    app: testpipeline
+    app: %s
 spec:
   tasks:
     - name: hello-task
@@ -45,13 +46,13 @@ spec:
             image: alpine
             script: |
               #!/bin/sh
-              echo "Hello, World!"`
+              echo "Hello, World!"`, s.name, s.namespace, s.name)
 	err := s.client.Pipeline(s.namespace).Create(context.TODO(), yamlStr)
 	s.Nil(err)
 }
 
 func (s *SuiteTestPipeline) Test2ListPipeline() {
-	res, err := s.client.Pipeline(s.namespace).List(context.TODO(), metav1.ListOptions{
+	res, _, err := s.client.Pipeline(s.namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("app=%s", s.name),
 		Limit:         3,
 	})
@@ -69,7 +70,7 @@ func (s *SuiteTestPipeline) Test2ListPipeline() {
 }
 
 func (s *SuiteTestPipeline) Test3ListPipelineWithoutNamespace() {
-	res, err := s.client.Pipeline("").List(context.TODO(), metav1.ListOptions{
+	res, _, err := s.client.Pipeline("").List(context.TODO(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("app=%s", s.name),
 		Limit:         3,
 	})
@@ -102,7 +103,28 @@ func (s *SuiteTestPipeline) Test5GetYamlPipeline() {
 	}
 }
 
-func (s *SuiteTestPipeline) Test6DeletePipeline() {
+func (s *SuiteTestPipeline) Test6ListAllPipeline() {
+	var res []tektonv1.Pipeline
+	conti := ""
+	var err error
+	for {
+		res, conti, err = s.client.Pipeline(s.namespace).List(context.TODO(), metav1.ListOptions{
+			Limit:    1,
+			Continue: conti,
+		})
+		s.Nil(err)
+		if s.NotNil(res) {
+			for _, item := range res {
+				fmt.Println(item.GetName())
+			}
+		}
+		if conti == "" {
+			break
+		}
+	}
+}
+
+func (s *SuiteTestPipeline) Test7DeletePipeline() {
 	err := s.client.Pipeline(s.namespace).Delete(context.TODO(), s.name)
 	s.Nil(err)
 }

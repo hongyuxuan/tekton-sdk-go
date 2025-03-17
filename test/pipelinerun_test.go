@@ -35,7 +35,7 @@ func (s *SuiteTestPipelineRun) Test1CreatePipelineRun() {
 }
 
 func (s *SuiteTestPipelineRun) Test2ListPipelineRun() {
-	res, err := s.client.PipelineRun(s.namespace).List(context.TODO(), metav1.ListOptions{
+	res, _, err := s.client.PipelineRun(s.namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: "app=testpipelinerun",
 		Limit:         3,
 	})

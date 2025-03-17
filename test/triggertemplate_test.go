@@ -33,7 +33,7 @@ func (s *SuiteTestTriggerTemplate) Test1CreateTriggerTemplate() {
 kind: TriggerTemplate
 metadata:
   annotations:
-    fiops/author: hongyuxuan
+    tekton/author: hongyuxuan
   labels:
     app: testtriggertemplate
   creationTimestamp: "2024-03-07T01:31:16Z"
@@ -91,7 +91,7 @@ spec:
 }
 
 func (s *SuiteTestTriggerTemplate) Test2ListTriggerTemplate() {
-	res, err := s.client.TriggerTemplate(s.namespace).List(context.TODO(), metav1.ListOptions{
+	res, _, err := s.client.TriggerTemplate(s.namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: "app=testtriggertemplate",
 		Limit:         3,
 	})

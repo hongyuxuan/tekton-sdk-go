@@ -28,7 +28,7 @@ func (s *SuiteTestTaskRun) SetupSuite() {
 }
 
 func (s *SuiteTestTaskRun) Test1ListTaskRun() {
-	res, err := s.client.TaskRun(s.namespace).List(context.TODO(), metav1.ListOptions{
+	res, _, err := s.client.TaskRun(s.namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: "tekton.dev/pipelineRun=maven-pipeline-run-8g47s-r-m5cdd",
 	})
 	s.Nil(err)

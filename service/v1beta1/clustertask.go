@@ -36,10 +36,13 @@ func NewClusterTask(c *config.Config, namespace string, svcCtx *service.ServiceC
 type ListClusterTaskResponse struct {
 	ApiVersion string                      `json:"apiVersion"`
 	Items      []tektonv1beta1.ClusterTask `json:"items"`
+	Metadata   struct {
+		Continue string `json:"continue"`
+	}
 }
 
 // https://apiserver.cluster.local:6443/apis/tekton.dev/v1beta1/clustertasks?labelSelector=app.kubernetes.io%2Fversion%3D0.3&limit=500
-func (t *ClusterTask) List(ctx context.Context, opts metav1.ListOptions) (resp []tektonv1beta1.ClusterTask, err error) {
+func (t *ClusterTask) List(ctx context.Context, opts metav1.ListOptions) (resp []tektonv1beta1.ClusterTask, conti string, err error) {
 	req := t.httpclient.Get("/apis/tekton.dev/v1beta1/clustertasks").SetBearerAuthToken(t.token)
 	if opts.LabelSelector != "" {
 		req.SetQueryParam("labelSelector", opts.LabelSelector)
@@ -52,11 +55,14 @@ func (t *ClusterTask) List(ctx context.Context, opts metav1.ListOptions) (resp [
 	} else {
 		req.SetQueryParam("limit", "500") // default 500
 	}
+	if opts.Continue != "" {
+		req.SetQueryParam("continue", opts.Continue)
+	}
 	var res ListClusterTaskResponse
 	if err = req.SetSuccessResult(&res).Do(ctx).Err; err != nil {
 		return
 	}
-	return t.processItems(res.Items), nil
+	return t.processItems(res.Items), res.Metadata.Continue, nil
 }
 
 // https://apiserver.cluster.local:6443/apis/tekton.dev/v1beta1/clustertasks/:name

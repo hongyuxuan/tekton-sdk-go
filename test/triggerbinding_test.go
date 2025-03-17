@@ -33,7 +33,7 @@ func (s *SuiteTestTriggerBinding) Test1CreateTriggerBinding() {
 kind: TriggerBinding
 metadata:
   annotations:
-    fiops/author: fanpengfei
+    tekton/author: hongyuxuan
   labels:
     app: testtriggerbinding
   creationTimestamp: "2024-03-05T09:15:14Z"
@@ -55,7 +55,7 @@ spec:
 }
 
 func (s *SuiteTestTriggerBinding) Test2ListTriggerBinding() {
-	res, err := s.client.TriggerBinding(s.namespace).List(context.TODO(), metav1.ListOptions{
+	res, _, err := s.client.TriggerBinding(s.namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: "app=testtriggerbinding",
 		Limit:         3,
 	})

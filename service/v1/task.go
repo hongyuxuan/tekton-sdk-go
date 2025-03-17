@@ -38,10 +38,13 @@ func NewTask(c *config.Config, namespace string, svcCtx *service.ServiceContext)
 type ListTaskResponse struct {
 	ApiVersion string          `json:"apiVersion"`
 	Items      []tektonv1.Task `json:"items"`
+	Metadata   struct {
+		Continue string `json:"continue"`
+	}
 }
 
 // https://apiserver.cluster.local:6443/apis/tekton.dev/v1/namespaces/default/tasks?labelSelector=app.kubernetes.io%2Fversion%3D0.3&limit=500
-func (t *Task) List(ctx context.Context, opts metav1.ListOptions) (resp []tektonv1.Task, err error) {
+func (t *Task) List(ctx context.Context, opts metav1.ListOptions) (resp []tektonv1.Task, conti string, err error) {
 	url := fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/tasks", t.namespace)
 	if t.namespace == "" {
 		url = "/apis/tekton.dev/v1/tasks"
@@ -58,12 +61,15 @@ func (t *Task) List(ctx context.Context, opts metav1.ListOptions) (resp []tekton
 	} else {
 		req.SetQueryParam("limit", "500") // default 500
 	}
+	if opts.Continue != "" {
+		req.SetQueryParam("continue", opts.Continue)
+	}
 	var res ListTaskResponse
 	if err = req.SetSuccessResult(&res).Do(ctx).Err; err != nil {
 		return
 	}
 
-	return t.processItems(res.Items), nil
+	return t.processItems(res.Items), res.Metadata.Continue, nil
 }
 
 // https://apiserver.cluster.local:6443/apis/tekton.dev/v1/namespaces/default/tasks/:name
