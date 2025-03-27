@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 
 	tekton "github.com/hongyuxuan/tekton-sdk-go"
 	"github.com/hongyuxuan/tekton-sdk-go/core/option"
+	"github.com/hongyuxuan/tekton-sdk-go/types"
 	"github.com/stretchr/testify/suite"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -20,12 +23,12 @@ type SuiteTestPipelineRun struct {
 
 func (s *SuiteTestPipelineRun) SetupSuite() {
 	s.client = tekton.NewClient(
-		option.WithKubeconfig("./kubeconfig"),
+		option.WithKubeconfig("/root/.kube/config"),
 		option.WithSecretPrefix("default-token"),
 		// option.WithDebug(true),
 	)
-	s.name = "testpipelinerun"
-	s.namespace = "default"
+	s.name = "lizardcd-ui-m5nkw-r-v5spb"
+	s.namespace = "tektoncd-default"
 }
 
 func (s *SuiteTestPipelineRun) Test1CreatePipelineRun() {
@@ -36,7 +39,7 @@ func (s *SuiteTestPipelineRun) Test1CreatePipelineRun() {
 
 func (s *SuiteTestPipelineRun) Test2ListPipelineRun() {
 	res, _, err := s.client.PipelineRun(s.namespace).List(context.TODO(), metav1.ListOptions{
-		LabelSelector: "app=testpipelinerun",
+		LabelSelector: fmt.Sprintf("app=%s", s.name),
 		Limit:         3,
 	})
 	s.Nil(err)
@@ -56,11 +59,26 @@ func (s *SuiteTestPipelineRun) Test3GetPipelineRun() {
 	res, err := s.client.PipelineRun(s.namespace).Get(context.TODO(), s.name)
 	s.Nil(err)
 	if s.NotNil(res) {
-		fmt.Println(res)
+		b, _ := json.MarshalIndent(res, "", "  ")
+		fmt.Println(string(b))
 	}
 }
 
-func (s *SuiteTestPipelineRun) Test4GetYamlPipelineRun() {
+func (s *SuiteTestPipelineRun) Test4CancelPipelineRun() {
+	res, err := s.client.PipelineRun(s.namespace).Patch(context.TODO(), s.name, []types.PatchOptions{
+		{
+			Op:    "replace",
+			Path:  "/spec/status",
+			Value: "Cancelled",
+		},
+	})
+	s.Nil(err)
+	if s.NotNil(res) {
+		s.Equal(tektonv1.PipelineRunSpecStatus("Cancelled"), res.Spec.Status)
+	}
+}
+
+func (s *SuiteTestPipelineRun) Test5GetYamlPipelineRun() {
 	res, err := s.client.PipelineRun(s.namespace).GetYaml(context.TODO(), s.name)
 	s.Nil(err)
 	if s.NotEmpty(res) {
@@ -68,7 +86,7 @@ func (s *SuiteTestPipelineRun) Test4GetYamlPipelineRun() {
 	}
 }
 
-func (s *SuiteTestPipelineRun) Test5DeletePipelineRun() {
+func (s *SuiteTestPipelineRun) Test6DeletePipelineRun() {
 	err := s.client.PipelineRun(s.namespace).Delete(context.TODO(), s.name)
 	s.Nil(err)
 }

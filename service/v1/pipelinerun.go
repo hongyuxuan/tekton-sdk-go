@@ -102,6 +102,17 @@ func (t *PipelineRun) Create(ctx context.Context, yamlStr string) (err error) {
 	return t.svcCtx.ApplyYaml(ctx, t.namespace, yamlStr, "PipelineRun")
 }
 
+func (t *PipelineRun) Patch(ctx context.Context, name string, options []types.PatchOptions) (resp tektonv1.PipelineRun, err error) {
+	if err = t.httpclient.Patch(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/pipelineruns/%s", t.namespace, name)).
+		SetHeader("Content-Type", "application/json-patch+json").
+		SetBearerAuthToken(t.token).
+		SetBody(&options).
+		SetSuccessResult(&resp).Do(ctx).Err; err != nil {
+		return
+	}
+	return
+}
+
 func (t *PipelineRun) processItems(items []tektonv1.PipelineRun) []tektonv1.PipelineRun {
 	for i := range items {
 		delete(items[i].ObjectMeta.Annotations, "kubectl.kubernetes.io/last-applied-configuration")

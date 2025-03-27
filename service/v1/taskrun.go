@@ -117,6 +117,17 @@ func (t *TaskRun) Create(ctx context.Context, yamlStr string) (err error) {
 	return t.svcCtx.ApplyYaml(ctx, t.namespace, yamlStr, "TaskRun")
 }
 
+func (t *TaskRun) Patch(ctx context.Context, name string, options []types.PatchOptions) (resp tektonv1.TaskRun, err error) {
+	if err = t.httpclient.Patch(fmt.Sprintf("/apis/tekton.dev/v1/namespaces/%s/taskruns/%s", t.namespace, name)).
+		SetHeader("Content-Type", "application/json-patch+json").
+		SetBearerAuthToken(t.token).
+		SetBody(&options).
+		SetSuccessResult(&resp).Do(ctx).Err; err != nil {
+		return
+	}
+	return
+}
+
 func (t *TaskRun) processItems(items []tektonv1.TaskRun) []tektonv1.TaskRun {
 	for i := range items {
 		delete(items[i].ObjectMeta.Annotations, "kubectl.kubernetes.io/last-applied-configuration")
